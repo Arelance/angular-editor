@@ -312,10 +312,12 @@ export class AngularEditorToolbarComponent {
       }
   }
 
-  watchUploadImage(response: HttpResponse<{imageUrl: string}>, event) {
-    const { imageUrl } = response.body;
-    this.editorService.insertImage(imageUrl);
-    event.srcElement.value = null;
+  watchUploadImage(response, event) {
+    if (response.body){
+        const { imageUrl } = response.body;
+        this.editorService.insertImage(imageUrl);
+        event.srcElement.value = null;
+    }
   }
 
   /**
