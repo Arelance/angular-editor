@@ -1,6 +1,6 @@
 {
   "name": "@arelance/angular-editor",
-  "version": "1.1.5",
+  "version": "1.1.6",
   "description": "A simple native WYSIWYG editor for Angular 6+, 7+, 8+. Rich Text editor component for Angular.",
   "author": "Andrey Kolkov <a.kolkov@gmail.com>",
   "repository": "https://github.com/arelance/angular-editor",
