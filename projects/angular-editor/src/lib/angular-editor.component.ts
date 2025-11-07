@@ -367,6 +367,9 @@ export class AngularEditorComponent implements OnInit, ControlValueAccessor, Aft
       els.unshift(a);
       a = a.parentNode;
     }
+
+    const host = this.textArea.nativeElement as HTMLElement; // el contenedor contenteditable
+    this.normalizeLists(host);
     this.editorToolbar.triggerBlocks(els);
   }
 
@@ -416,4 +419,55 @@ export class AngularEditorComponent implements OnInit, ControlValueAccessor, Aft
     html = html.replace('position: fixed;', '');
     return html;
   }
+
+  /** Quita <ul>/<ol> envueltos por <p> y arregla LIs sueltos. */
+private normalizeLists(container: HTMLElement): void {
+  // 1) <p><ul>...</ul></p>  ->  <ul>...</ul>
+  const ps = Array.from(container.querySelectorAll('p'));
+  for (const p of ps) {
+    // Caso A: el <p> solo contiene un UL/OL (y nada más significativo)
+    const onlyEl = p.children.length === 1 ? p.children[0] as HTMLElement : null;
+    const onlyElIsList = onlyEl && (onlyEl.tagName === 'UL' || onlyEl.tagName === 'OL');
+    const textWithoutZWSP = (p.textContent || '').replace(/\u200B/g, '').trim();
+
+    if (onlyElIsList && textWithoutZWSP === '') {
+      p.replaceWith(onlyEl!);
+      continue;
+    }
+
+    // Caso B: el <p> mezcla texto y listas -> extrae las listas fuera del <p>
+    const listsInside = Array.from(p.querySelectorAll(':scope > ul, :scope > ol')) as HTMLElement[];
+    if (listsInside.length) {
+      for (const list of listsInside) {
+        p.parentNode!.insertBefore(list, p);
+      }
+      // Si el <p> queda vacío (o solo con espacios), eliminarlo
+      const remaining = (p.textContent || '').replace(/\u200B/g, '').trim();
+      if (!remaining && p.childElementCount === 0) {
+        p.remove();
+      }
+    }
+  }
+
+  // 2) Arreglar <li> envueltos por <p> o <font> (casos raros de pegado/formato)
+  const lis = Array.from(container.querySelectorAll('li'));
+  for (const li of lis) {
+    const parent = li.parentElement;
+    if (!parent) continue;
+
+    // Si el padre NO es UL/OL, intenta subir hasta encontrarlo
+    if (parent.tagName !== 'UL' && parent.tagName !== 'OL') {
+      const listAncestor = li.closest('ul, ol') as HTMLElement | null;
+      if (listAncestor && listAncestor !== parent) {
+        listAncestor.appendChild(li); // mueve el LI a su lista real
+        // borra envoltorios vacíos
+        if (parent.tagName === 'P' || parent.tagName === 'FONT') {
+          const txt = (parent.textContent || '').replace(/\u200B/g, '').trim();
+          if (!txt && parent.childElementCount === 0) parent.remove();
+        }
+      }
+    }
+  }
+}
+
 }
